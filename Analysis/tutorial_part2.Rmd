@@ -35,6 +35,7 @@ data("my_penguins")
 read.csv("../Data/my_gapminder.csv")
 read.csv("../Data/my_penguins.csv")
 
+# source my_rf_cv code 
 source("../Code/my_rf_cv_part2.R")
 ```
 
@@ -42,29 +43,39 @@ source("../Code/my_rf_cv_part2.R")
 Finally, we will demonstrate how to use `my_rf_cv`. In this example, we want to predict `body_mass_g` from the covariates `bill_length_mm`, `bill_depth_mm` and `flipper_length_mm`. 
 
 ```{r}
+# create empty vectors 
 mse_all <- rep(NA, 90)
 k_vals <- rep(c(2,5,10), each = 30)
 
+# iterate through all 90 simulations 
 for(i in 1:90) {
   k_vals[i]
+  # fill in with output from my_rf_cv
   mse_all[i] <- my_rf_cv(k_vals[i])
 }
 mse_all
 
+# separate mse data by k-value 
 mse_2 <- mse_all[1:30]
 mse_5 <- mse_all[31:60]
 mse_10 <- mse_all[61:90]
 
+# write as csv 
 write.csv(mse_all, "mse_all.csv")
 ```
 We will now plot a boxplot for each value of k, each representing 30 simulations. 
 
 ```{r}
+# create daat frame of k-values by mse 
 mse_box <- data.frame("k" = c(2, 5, 10),
                       "MSE" = c(mse_2, mse_5, mse_10))
+
+# create boxplot 
 mse_boxplot <- ggplot(data = mse_box, aes(x = k, y = MSE, group = k)) + 
   geom_boxplot() +
   labs(title = "Distribution of 90 Random Forest Simulations, by k-Value", x = "k-Value", y = "CV Estimated MSE")
+
+# save boxplot as pdf 
 ggsave("mse_boxplot.pdf", mse_boxplot)
 ```
 We will now calculate the average CV estimate and standard deviation for all k-Values. 
@@ -88,6 +99,8 @@ ave_sd_all <- data.frame("k" = c(2, 5, 10),
                          
                          "sd" = c(sd_cv_2, sd_cv_5, sd_cv_10))
 mse_tab <- ave_sd_all
+
+# create rds file for table 
 saveRDS(mse_tab, "mse_table.rds") 
 ```
 Looking at our boxplots and tables of the mean/SD of our MSE values across k, it can be seen that the number of folds that produced the highest mean MSE was k = 2, and the lowest being k = 10. Although the table demonstrates that as k increased, the spread (standard deviation) of our MSE values increased. However, interpreting this data in conjunction with our boxplots suggests that if we removed extreme outliers from each group of data, k = 10 in fact has the least standard deviation and k = 2 has the largest spread. 
