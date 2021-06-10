@@ -1,0 +1,96 @@
+---
+---
+title: "Project 3: project3Package2021 Tutorial"
+author: "Amy Chew"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{project3Package2021 Tutorial}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE, rmarkdown.html_vignette.check_title = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+```{r, message = FALSE}
+# load packages
+library(project3Package2021)
+library(dplyr)
+library(ggplot2)
+library(tibble)
+
+# load data
+my_gapminder <- library(gapminder)
+
+my_penguins <- library(palmerpenguins)
+data("my_penguins")
+```
+
+```{r}
+# read in data
+read.csv("../Data/my_gapminder.csv")
+read.csv("../Data/my_penguins.csv")
+
+source("../Code/my_rf_cv_part2.R")
+```
+
+### my_rf_cv (Random Forest and Cross-Validation)
+Finally, we will demonstrate how to use `my_rf_cv`. In this example, we want to predict `body_mass_g` from the covariates `bill_length_mm`, `bill_depth_mm` and `flipper_length_mm`. 
+
+```{r}
+mse_all <- rep(NA, 90)
+k_vals <- rep(c(2,5,10), each = 30)
+
+for(i in 1:90) {
+  k_vals[i]
+  mse_all[i] <- my_rf_cv(k_vals[i])
+}
+mse_all
+
+mse_2 <- mse_all[1:30]
+mse_5 <- mse_all[31:60]
+mse_10 <- mse_all[61:90]
+
+write.csv(mse_all, "mse_all.csv")
+```
+We will now plot a boxplot for each value of k, each representing 30 simulations. 
+
+```{r}
+mse_box <- data.frame("k" = c(2, 5, 10),
+                      "MSE" = c(mse_2, mse_5, mse_10))
+mse_boxplot <- ggplot(data = mse_box, aes(x = k, y = MSE, group = k)) + 
+  geom_boxplot() +
+  labs(title = "Distribution of 90 Random Forest Simulations, by k-Value", x = "k-Value", y = "CV Estimated MSE")
+ggsave("mse_boxplot.pdf", mse_boxplot)
+```
+We will now calculate the average CV estimate and standard deviation for all k-Values. 
+
+```{r}
+# k = 2
+ave_cv_2 <- mean(mse_2)
+sd_cv_2 <- sd(mse_2)
+
+# k = 5
+ave_cv_5 <- mean(mse_5)
+sd_cv_5 <- sd(mse_5)
+
+# k = 10
+ave_cv_10 <- mean(mse_10)
+sd_cv_10 <- sd(mse_10)
+
+# create data frame 
+ave_sd_all <- data.frame("k" = c(2, 5, 10),
+                         "mean" = c(ave_cv_2, ave_cv_5, ave_cv_10),
+                         
+                         "sd" = c(sd_cv_2, sd_cv_5, sd_cv_10))
+mse_tab <- ave_sd_all
+saveRDS(mse_tab, "mse_table.rds") 
+```
+Looking at our boxplots and tables of the mean/SD of our MSE values across k, it can be seen that the number of folds that produced the highest mean MSE was k = 2, and the lowest being k = 10. Although the table demonstrates that as k increased, the spread (standard deviation) of our MSE values increased. However, interpreting this data in conjunction with our boxplots suggests that if we removed extreme outliers from each group of data, k = 10 in fact has the least standard deviation and k = 2 has the largest spread. 
+
+This may be the case, because the more folds used in a Random Forest analysis, the more detailed our test data is and the lower the error. 
+
